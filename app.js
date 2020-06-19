@@ -79,5 +79,5 @@ app.use((req,res,next)=>{
 })
 app.use('/order', orderRouter)
 app.use('/categories', categoryRouter)
-app.listen(8090)
+app.listen(process.env.PORT || 8090)
  
