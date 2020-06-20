@@ -22,7 +22,7 @@ exports.postOrder=(req,res,next)=>{
     }
     let options={
         priority:"high",
-        sound:"default"
+        android:{sound:"default"}
     }
     const order=req.body.order
     const chkRef=d_b.ref('Categories')
