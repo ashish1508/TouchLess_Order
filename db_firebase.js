@@ -1,10 +1,11 @@
-const  Firebase=require('firebase')
-
-Firebase.initializeApp({
+const  admin=require('firebase-admin')
+const serviceAccount=require('./serviceAcc.json')
+admin.initializeApp({
     databaseURL:'https://appstore-8276c.firebaseio.com/',
-    serviceAccount:'../serviceAcc.json'
+    credential:admin.credential.cert(serviceAccount)
 })
 
-const db=Firebase.database();  
+const db=admin.database();  
 
 module.exports.d_b=db
+module.exports.admin=admin

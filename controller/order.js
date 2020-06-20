@@ -1,16 +1,112 @@
-const d_b=require('../db_firebase').d_b
+const admin=require('../db_firebase').admin
+const d_b = require('../db_firebase').d_b
+const firebase=require('firebase')
+const async = require('async')
+
+const mapping={
+    "1":"Burgers",
+    "2":"Noodles",
+    "3":"Pizza",
+    "4":"Puffs"
+}
 let id=1
+
+
 exports.postOrder=(req,res,next)=>{
-    
+    const token='cucubsGZTmme0RhOkFeFOr:APA91bHGUpUiZdC6aXxYmgGStYWFr-hslbDBPIey2p0F7s3oensGJmIc8B_k8X5p6xh_8X_N17J0aN1Ev4BoBFOPGUAhWBv-VsF5yZwuJT2cARyZ3NQncL4RMZEaanjX8JsULYY313sf'
+    let msg={
+        notification:{
+            title:'Hello',
+            body:'Hey'
+        }
+    }
+    // let options={
+    //     priority:"high",
+    //     timeToLive:60*60*24
+    // }
     const order=req.body.order
-    console.log(order)
-    const ordRef=d_b.ref('Orders')
-    ordRef.push({
-        [id]:order
-    }).then(result=>{
-        console.log('pushed')
-        id=id+1
-        res.status(200).json({mesage:"success!"})
+    const chkRef=d_b.ref('Categories')
+    let flag=0
+    let fail=[]
+
+    async.map(order,(i,callback)=>{
+        const cat_id=i.cat_id
+        chkRef.child(mapping[cat_id]).child(i.name).once('value',snap => {
+           if(i.quantity<snap.val().quantity){
+               console.log("OK")
+           }
+           else{
+               flag=1;
+               fail.push({
+                   name:i.name,
+                   avail_quantity:snap.val().quantity
+               })
+               console.log("Choose less quantity")
+               
+           }
+           callback(null)
+        })
+        
+    },(err,result)=>{
+        if(err) console.log(err)
+        console.log(flag)
+        if(flag===0){
+            console.log("--")
+            const ordRef=d_b.ref('Orders')
+            ordRef.push({
+                order_id:id,
+                order_details:order,
+                order_at:firebase.database.ServerValue.TIMESTAMP,
+                order_status:'PENDING'
+            }).then(result=>{
+                id=id+1
+                order.map((i,index)=>{
+                    chkRef.child(mapping[i.cat_id]).child(i.name).once('value',snap =>{
+                        const quantity_old=snap.val().quantity
+                        chkRef.child(mapping[i.cat_id]).update({
+                            [i.name]:{
+                                name:i.name,
+                                quantity:quantity_old-i.quantity,
+                                price:i.price
+                            }
+                        })
+                    })
+                })
+                admin.messaging().sendToDevice(token,msg).then(response => {
+                                    console.log('Notif successfully sent!!')
+                                    res.status(200).json({message:"success!",order_id:(id-1),failed:[]})
+                                })
+                                .catch(err => console.log(err))
+            })
+            .catch(err => console.log(err))
+        }
+    
+        if(flag===1){
+            console.log('Hey')
+            console.log(fail)
+            res.status(200).json({message:"fail!",order_id:0,failed:fail})
+        }
     })
-    .catch(err => console.log(err))
+
+    console.log("hey")
+    // order.map((i,index)=>{
+    //     const cat_id=i.cat_id
+    //     chkRef.child(mapping[cat_id]).child(i.name).once('value',snap => {
+    //        if(i.quantity<snap.val().quantity){
+    //            console.log("OK")
+    //        }
+    //        else{
+    //            flag=1;
+    //            fail.push({
+    //                name:i.name,
+    //                avail_quantity:snap.val().quantity
+    //            })
+    //            console.log("Choose less quantity")
+    //        }
+    //     })    
+    // })
+    // console.log(order)
+
+    //if succeeds
+   
 }
