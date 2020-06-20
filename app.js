@@ -87,5 +87,5 @@ app.use('/owner',ownerRouter)
 //app.use('/token',tokenRouter)
 app.use('/order', orderRouter)
 app.use('/categories', categoryRouter)
-app.listen(8090)
+app.listen(process.env.PORT || 8090)
  
